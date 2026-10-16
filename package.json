@@ -22,7 +22,8 @@
   },
   "homepage": "https://github.com/FortuneO-365/Study-Room-Booking-API#readme",
   "dependencies": {
-    "bcrypt": "^6.0.0",
+    "@types/bcrypt": "^6.0.0",
+    "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
     "dotenv": "^18.0.7",
     "express": "^5.3.0",
