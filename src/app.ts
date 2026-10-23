@@ -2,7 +2,16 @@ import express from 'express';
 import cors from 'cors';
 import helmet from 'helmet';
 
-import authRoutes from './routes/authRoutes.js'
+import authRoutes from './routes/auth.routes.js';
+import roomRoutes from './routes/rooms.routes.js';
+import { errorHandler } from './utils/errorHandler.js';
+import fs from 'node:fs';
+import YAML from 'yaml';
+import swaggerUi from 'swagger-ui-express';
+
+const openApiDocument = YAML.parse(
+    fs.readFileSync(new URL('./docs/openapi.yaml', import.meta.url), 'utf8'),
+)
 
 export const app = express();
 
@@ -17,3 +26,11 @@ app.get("/health", (req, res) => {
 })
 
 app.use('/api/auth', authRoutes);
+app.use('/api/rooms', roomRoutes)
+app.use(errorHandler);
+app.use(
+    '/docs',
+    helmet({ contentSecurityPolicy: false}),
+    swaggerUi.serve,
+    swaggerUi.setup(openApiDocument),
+);

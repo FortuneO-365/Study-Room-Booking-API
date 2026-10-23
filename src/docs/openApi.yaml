@@ -1,0 +1,646 @@
+openapi: 3.0.3
+info:
+  title: Study Room Booking API
+  version: 0.1.0
+  description: >
+    Lets students find and book study rooms, and stops two groups booking the same room at the same time.
+    All times are ISO 8601 in UTC. Protected endpoints need a JWT in the Authorization header.
+servers:
+  - url: http://localhost:3000
+    description: Local development
+  - url: https://your-service.onrender.com
+    description: Deployed (replace with your Render URL)
+
+tags:
+  - name: Auth
+  - name: Rooms
+  - name: Bookings
+
+paths:
+  /auth/register:
+    post:
+      tags: [Auth]
+      summary: Register a student account
+      description: Public. Always creates a student. The role cannot be set by the client.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/RegisterRequest'
+      responses:
+        '201':
+          description: Account created and logged in
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '409':
+          $ref: '#/components/responses/Conflict'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /auth/login:
+    post:
+      tags: [Auth]
+      summary: Log in and receive a JWT
+      description: Public and rate limited. The error message does not reveal whether the email or password was wrong.
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/LoginRequest'
+      responses:
+        '200':
+          description: Logged in
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/AuthResponse'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '429':
+          $ref: '#/components/responses/RateLimited'
+
+  /rooms:
+    get:
+      tags: [Rooms]
+      summary: List active rooms
+      description: Public. Only active rooms are returned.
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: minCapacity
+          in: query
+          schema:
+            type: integer
+            minimum: 1
+      responses:
+        '200':
+          description: A page of rooms
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/RoomList'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+    post:
+      tags: [Rooms]
+      summary: Create a room
+      description: Staff or admin only.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateRoomRequest'
+      responses:
+        '201':
+          description: Room created
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+
+  /rooms/{id}:
+    parameters:
+      - $ref: '#/components/parameters/RoomId'
+    get:
+      tags: [Rooms]
+      summary: Get one room
+      description: Public. Inactive rooms return 404 to students, and are visible to staff and admins.
+      responses:
+        '200':
+          description: The room
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    patch:
+      tags: [Rooms]
+      summary: Update a room
+      description: Staff or admin only. Send only the fields to change.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/UpdateRoomRequest'
+      responses:
+        '200':
+          description: The updated room
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Room'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+    delete:
+      tags: [Rooms]
+      summary: Delete a room
+      description: Staff or admin only. Refused while the room has future confirmed bookings. Deactivate it instead.
+      security:
+        - bearerAuth: []
+      responses:
+        '204':
+          description: Room deleted. No body.
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /rooms/{id}/availability:
+    parameters:
+      - $ref: '#/components/parameters/RoomId'
+    get:
+      tags: [Rooms]
+      summary: Free and booked 30-minute slots for one day
+      description: Public. The date is the building's local date.
+      parameters:
+        - name: date
+          in: query
+          required: true
+          schema:
+            type: string
+            format: date
+            example: '2026-10-20'
+      responses:
+        '200':
+          description: Slots for the day
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Availability'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '404':
+          $ref: '#/components/responses/NotFound'
+
+  /bookings:
+    post:
+      tags: [Bookings]
+      summary: Book a room
+      description: >
+        Authenticated. Checks opening hours, duration, capacity, the student's booking limit,
+        and overlaps with existing confirmed bookings.
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/CreateBookingRequest'
+      responses:
+        '201':
+          description: Booking confirmed
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+  /bookings/me:
+    get:
+      tags: [Bookings]
+      summary: List my bookings
+      description: Authenticated. Newest first.
+      security:
+        - bearerAuth: []
+      parameters:
+        - $ref: '#/components/parameters/Page'
+        - $ref: '#/components/parameters/Limit'
+        - name: status
+          in: query
+          schema:
+            type: string
+            enum: [confirmed, cancelled]
+        - name: upcoming
+          in: query
+          schema:
+            type: boolean
+      responses:
+        '200':
+          description: A page of bookings
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/BookingList'
+        '400':
+          $ref: '#/components/responses/ValidationError'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+
+  /bookings/{id}/cancel:
+    parameters:
+      - $ref: '#/components/parameters/BookingId'
+    patch:
+      tags: [Bookings]
+      summary: Cancel a booking
+      description: Owner or admin only. Only possible before the booking starts.
+      security:
+        - bearerAuth: []
+      responses:
+        '200':
+          description: The cancelled booking
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '400':
+          $ref: '#/components/responses/BookingAlreadyStarted'
+        '401':
+          $ref: '#/components/responses/Unauthorized'
+        '403':
+          $ref: '#/components/responses/Forbidden'
+        '404':
+          $ref: '#/components/responses/NotFound'
+        '409':
+          $ref: '#/components/responses/Conflict'
+
+components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
+  parameters:
+    RoomId:
+      name: id
+      in: path
+      required: true
+      description: A 24-character Mongo id
+      schema:
+        type: string
+        pattern: '^[a-fA-F0-9]{24}$'
+        example: '64f1a2b3c4d5e6f7a8b9c0d1'
+    BookingId:
+      name: id
+      in: path
+      required: true
+      schema:
+        type: string
+        pattern: '^[a-fA-F0-9]{24}$'
+    Page:
+      name: page
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        default: 1
+    Limit:
+      name: limit
+      in: query
+      schema:
+        type: integer
+        minimum: 1
+        maximum: 100
+        default: 20
+
+  schemas:
+    Error:
+      type: object
+      required: [error]
+      properties:
+        error:
+          type: object
+          required: [code, message, details]
+          properties:
+            code:
+              type: string
+              example: BOOKING_CONFLICT
+            message:
+              type: string
+            details:
+              type: array
+              items:
+                type: object
+                properties:
+                  field:
+                    type: string
+                  message:
+                    type: string
+
+    Meta:
+      type: object
+      properties:
+        page:
+          type: integer
+        limit:
+          type: integer
+        total:
+          type: integer
+
+    RegisterRequest:
+      type: object
+      required: [name, email, password]
+      properties:
+        name:
+          type: string
+          minLength: 2
+          maxLength: 120
+          example: Ada Okafor
+        email:
+          type: string
+          format: email
+          example: ada@student.example.edu
+        password:
+          type: string
+          minLength: 8
+          maxLength: 72
+          example: at-least-8-characters
+
+    LoginRequest:
+      type: object
+      required: [email, password]
+      properties:
+        email:
+          type: string
+          format: email
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [user, token]
+      properties:
+        user:
+          $ref: '#/components/schemas/User'
+        token:
+          type: string
+          description: JWT. Send it as Authorization Bearer on protected endpoints.
+
+    User:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        email:
+          type: string
+        role:
+          type: string
+          enum: [student, staff, admin]
+        createdAt:
+          type: string
+          format: date-time
+
+    CreateRoomRequest:
+      type: object
+      required: [name, building, floor, capacity]
+      properties:
+        name:
+          type: string
+          maxLength: 100
+          example: Library L2-07
+        building:
+          type: string
+          maxLength: 100
+          example: Library
+        floor:
+          type: integer
+          example: 2
+        capacity:
+          type: integer
+          minimum: 1
+          maximum: 50
+          example: 6
+        amenities:
+          type: array
+          items:
+            type: string
+          example: [whiteboard, screen]
+        isActive:
+          type: boolean
+          default: true
+
+    UpdateRoomRequest:
+      type: object
+      description: At least one field is required.
+      properties:
+        name:
+          type: string
+        building:
+          type: string
+        floor:
+          type: integer
+        capacity:
+          type: integer
+          minimum: 1
+          maximum: 50
+        amenities:
+          type: array
+          items:
+            type: string
+        isActive:
+          type: boolean
+
+    Room:
+      type: object
+      properties:
+        id:
+          type: string
+        name:
+          type: string
+        building:
+          type: string
+        floor:
+          type: integer
+        capacity:
+          type: integer
+        amenities:
+          type: array
+          items:
+            type: string
+        isActive:
+          type: boolean
+
+    RoomList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Room'
+        meta:
+          $ref: '#/components/schemas/Meta'
+
+    Availability:
+      type: object
+      properties:
+        roomId:
+          type: string
+        date:
+          type: string
+          format: date
+        slots:
+          type: array
+          items:
+            type: object
+            properties:
+              start:
+                type: string
+                format: date-time
+              end:
+                type: string
+                format: date-time
+              available:
+                type: boolean
+
+    CreateBookingRequest:
+      type: object
+      required: [roomId, startTime, endTime, attendeeCount]
+      properties:
+        roomId:
+          type: string
+          example: '64f1a2b3c4d5e6f7a8b9c0d1'
+        startTime:
+          type: string
+          format: date-time
+          example: '2026-10-20T10:00:00Z'
+        endTime:
+          type: string
+          format: date-time
+          example: '2026-10-20T11:00:00Z'
+        attendeeCount:
+          type: integer
+          minimum: 1
+          example: 4
+        purpose:
+          type: string
+          maxLength: 200
+          example: Group project
+
+    Booking:
+      type: object
+      properties:
+        id:
+          type: string
+        userId:
+          type: string
+        roomId:
+          type: string
+        startTime:
+          type: string
+          format: date-time
+        endTime:
+          type: string
+          format: date-time
+        attendeeCount:
+          type: integer
+        purpose:
+          type: string
+        status:
+          type: string
+          enum: [confirmed, cancelled]
+        createdAt:
+          type: string
+          format: date-time
+        cancelledAt:
+          type: string
+          format: date-time
+          nullable: true
+
+    BookingList:
+      type: object
+      properties:
+        data:
+          type: array
+          items:
+            $ref: '#/components/schemas/Booking'
+        meta:
+          $ref: '#/components/schemas/Meta'
+
+  responses:
+    ValidationError:
+      description: Invalid request, or a broken booking rule
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: VALIDATION_ERROR
+              message: Invalid request.
+              details:
+                - field: capacity
+                  message: Number must be greater than or equal to 1
+    Unauthorized:
+      description: Missing, invalid or expired token, or wrong login details
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Forbidden:
+      description: Logged in, but not allowed to do this
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    NotFound:
+      description: Resource does not exist
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    Conflict:
+      description: Conflict with existing data
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+          example:
+            error:
+              code: BOOKING_CONFLICT
+              message: The requested time overlaps an existing booking.
+              details: []
+    BookingAlreadyStarted:
+      description: The booking has already started, so it can't be cancelled
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error'
+    RateLimited:
+      description: Too many attempts
+      content:
+        application/json:
+          schema:
+            $ref: '#/components/schemas/Error' 

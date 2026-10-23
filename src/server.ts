@@ -10,7 +10,7 @@ if (!mongoUri) {
 }
 
 async function start() {
-    await mongoose.connect(mongoUri!);
+    await mongoose.connect(mongoUri!, { dbName: 'study-room-booking' });
     console.log("Connected to MongoDB");
 
     app.listen(port, () => {
