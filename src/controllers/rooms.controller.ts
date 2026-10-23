@@ -1,6 +1,6 @@
 import type { Request, Response } from "express";
 import asyncHandler from "../utils/asyncHandler.js";
-import { getRoomList, getRoombyId, createNewRoom, editRoomDetails, removeRoom } from "../services/rooms.service.js";
+import { getRoomList, getRoomById, createNewRoom, editRoomDetails, removeRoom } from "../services/rooms.service.js";
 import type { CreateRoomInput, ListRoomsQuery, RoomIdParam, UpdateRoomInput } from "../validation/room.schema.js";
 
 
@@ -10,7 +10,7 @@ export const listRooms = asyncHandler(async (req: Request, res: Response) => {
 })
 
 export const getRoom = asyncHandler(async (req: Request, res: Response) => {
-    const result = await getRoombyId(req.params as RoomIdParam);
+    const result = await getRoomById(req.params as RoomIdParam);
     res.status(200).json({ success: true, result });
 })
 

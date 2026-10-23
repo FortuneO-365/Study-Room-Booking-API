@@ -47,6 +47,21 @@ export const createBookingSchema = z
         },
     );
 
-
-
+export const listMyBookingsQuerySchema = z.object({
+    status: z.enum(['confirmed', 'cancelled']).optional(),
+    // Query strings arrive as "true" or "false". Convert them explicitly,
+    // because z.coerce.boolean() treats "false" as true.
+    upcoming: z
+        .enum(['true', 'false'])
+        .transform((value) => value === 'true')
+        .optional(),
+    page: z.coerce.number().int().min(1).default(1),
+    limit: z.coerce.number().int().min(1).max(100).default(20),
+});
+    
+export const bookingIdParamSchema = z.object({
+    id: z.string().regex(/^[a-f\d]{24}$/i, 'Invalid booking id.'),
+});
+    
+export type ListMyBookingsQuery = z.infer<typeof listMyBookingsQuerySchema>
 export type CreateBookingInput = z.infer<typeof createBookingSchema>;

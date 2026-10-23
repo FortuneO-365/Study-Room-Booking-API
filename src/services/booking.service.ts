@@ -44,7 +44,7 @@ export async function getMyBookings(userId: string, query: ListMyBookingsQuery) 
     return { data, meta: { page, limit, total } };
 }
   
-  export async function createNewBooking(userId: string, input: CreateBookingInput) {
+export async function createNewBooking(userId: string, input: CreateBookingInput) {
     const { roomId, startTime, endTime, attendeeCount, purpose } = input;
     const now = new Date();
   
@@ -146,4 +146,4 @@ export async function cancelCreatedBooking(
     await booking.save();
   
     return booking;
-  }
+}

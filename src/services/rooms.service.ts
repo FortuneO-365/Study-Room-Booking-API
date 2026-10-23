@@ -23,17 +23,18 @@ export async function getRoomList(query: ListRoomsQuery){
     };
 }
 
-export async function getRoombyId(param: RoomIdParam, includeInactive = false ){
-    
-    const filter: Record<string, unknown> = { _id: roomId };
-    if (!includeInactive) filter.isActive = true;
+export async function getRoomById(param: RoomIdParam, includeInactive = false) {
+    const { id } = param;
 
+    const filter: Record<string, unknown> = { _id: id };
+    if (!includeInactive) filter.isActive = true;
+  
     const room = await Room.findOne(filter);
     if (!room) {
-        throw ApiError.notFound("Room not found.");
+      throw ApiError.notFound("Room not found.");
     }
-
-  return room;
+  
+    return room;
 }
 
 export async function createNewRoom(input: CreateRoomInput){
