@@ -3,6 +3,7 @@ import cors from 'cors';
 import helmet from 'helmet';
 import authRoutes from './routes/auth.routes.js';
 import roomRoutes from './routes/rooms.routes.js';
+import bookingRoutes from './routes/booking.routes.js'
 import { errorHandler } from './utils/errorHandler.js';
 import swaggerUi from 'swagger-ui-express';
 import { openapiDocument } from './docs/openApi.js';
@@ -21,11 +22,20 @@ app.get("/health", (req, res) => {
 })
 
 app.use('/api/auth', authRoutes);
-app.use('/api/rooms', roomRoutes)
+app.use('/api/rooms', roomRoutes);
+app.use('/api/booking', bookingRoutes);
 app.use(errorHandler);
-app.use(
-    '/docs',
-    helmet({ contentSecurityPolicy: false}),
-    swaggerUi.serve,
-    swaggerUi.setup(openapiDocument),
-);
+if (openapiDocument) {
+    app.get('/openapi.json', (_req, res) => {
+      res.json(openapiDocument);
+    });
+  
+    app.use(
+      '/docs',
+      helmet({ contentSecurityPolicy: false }),
+      swaggerUi.serve,
+      swaggerUi.setup(null, {
+        swaggerOptions: { url: '/openapi.json' },
+      }),
+    );
+  }

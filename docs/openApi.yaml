@@ -8,8 +8,8 @@ info:
 servers:
   - url: http://localhost:3000
     description: Local development
-  - url: https://your-service.onrender.com
-    description: Deployed (replace with your Render URL)
+  - url: https://study-room-booking-api-mtoh.onrender.com
+    description: Deployed 
 
 tags:
   - name: Auth

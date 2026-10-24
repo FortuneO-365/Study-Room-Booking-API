@@ -2,7 +2,7 @@ import fs from 'node:fs';
 import path from 'node:path';
 import { parse } from 'yaml';
 
-const specPath = path.resolve(process.cwd(), 'docs', 'openapi.yaml');
+const specPath = path.resolve(process.cwd(), 'docs', 'openApi.yaml');
 
 let openapiDocument: Record<string, unknown> | undefined;
 
