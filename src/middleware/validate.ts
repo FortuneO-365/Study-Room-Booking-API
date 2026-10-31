@@ -16,7 +16,16 @@ export function validate(schema: ZodType, target: Target = 'body') {
       return next(ApiError.badRequest('VALIDATION_ERROR', 'Invalid request.', details));
     }
 
-    (req as any)[target] = result.data;
+    if (target === 'query') {
+      Object.defineProperty(req, 'query', { 
+        value: result.data, 
+        writable: true, 
+        configurable: true, 
+        enumerable: true 
+      });
+    } else {
+      (req as any)[target] = result.data;
+    }
     next();
   };
 }

@@ -8,6 +8,6 @@ const router = Router();
 
 router.post('/', requireAuth, validate(createBookingSchema), createBooking)
 router.get('/me', requireAuth,validate(listMyBookingsQuerySchema, "query"), listBookings)
-router.post('/:id/cancel', requireAuth,validate(bookingIdParamSchema, "params"), cancelBooking)
+router.patch('/:id/cancel', requireAuth,validate(bookingIdParamSchema, "params"), cancelBooking)
 
 export default router;

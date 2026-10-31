@@ -120,7 +120,7 @@ Responses:
 - 401 `UNAUTHORIZED`: wrong email or password. The message does not reveal which one was wrong.
 - 429 `RATE_LIMITED`: too many attempts.
 
-### Rooms nh
+### Rooms
 
 #### GET /rooms
 

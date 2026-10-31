@@ -6,6 +6,10 @@ import { env } from '../config/env.js';
 import bcrypt from 'bcryptjs';
 
 
+function isDuplicateKey(err: unknown): boolean {
+    return typeof err === 'object' && err !== null && (err as { code?: unknown }).code === 11000;
+}
+
 export async function registerUser(input: RegisterInput) {
     const { email, name, password } = input;
 
@@ -14,12 +18,23 @@ export async function registerUser(input: RegisterInput) {
         throw ApiError.conflict('EMAIL_TAKEN','A user already exists with this email');
     }
 
-    const user = await User.create({ 
-        name, 
-        email, 
-        passwordHash: password,
-        role: 'student'
-    });
+    let user;
+
+    try {
+        user = await User.create({ 
+            name, 
+            email, 
+            passwordHash: password,
+            role: 'student'
+        });
+        
+    } catch (error) {
+        if(isDuplicateKey(error)) {
+            throw ApiError.conflict("ROOM_NAME_TAKEN", "A room with this name already exists.");
+        }
+        throw error;
+    }
+
 
     const token = jwt.sign(
         { sub: user.id, role: user.role },
@@ -44,12 +59,12 @@ export async function loginUser(input: LoginInput) {
 
     const user =  await User.findOne({email}, 'passwordHash name email role');
     if(!user){
-        throw ApiError.unAuthorized('UNAUTHORIZED', 'User does not exist.')
+        throw ApiError.unAuthorized('UNAUTHORIZED', 'Invalid email or password.');
     }
 
     const isMatch = await bcrypt.compare(password, user.passwordHash);
     if (!isMatch){
-        throw ApiError.unAuthorized('UNAUTHORIZED', 'Incorrect Password.')
+        throw ApiError.unAuthorized('UNAUTHORIZED', 'Invalid email or password.');
     }
 
     const token = jwt.sign(

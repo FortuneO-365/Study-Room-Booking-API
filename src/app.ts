@@ -23,7 +23,7 @@ app.get("/health", (req, res) => {
 
 app.use('/api/auth', authRoutes);
 app.use('/api/rooms', roomRoutes);
-app.use('/api/booking', bookingRoutes);
+app.use('/api/bookings', bookingRoutes);
 app.use(errorHandler);
 if (openapiDocument) {
     app.get('/openapi.json', (_req, res) => {
