@@ -2,7 +2,7 @@ import { z } from 'zod';
 
 const roomFields = {
     name: z.string().trim().min(1).max(100),
-    capacity: z.number().int().min(1).max(200),
+    capacity: z.number().int().min(10).max(200),
     amenities: z.array(z.string()),
     isActive: z.boolean(),
 };

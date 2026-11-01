@@ -1,6 +1,7 @@
 import "dotenv/config"
 import mongoose from "mongoose"
 import { app } from "./app.js"
+import { startKeepAlive } from "./utils/keepAlive.js"
 
 const port = Number(process.env.PORT) || 3000;
 const mongoUri = process.env.MONGODB_URI;
@@ -14,7 +15,8 @@ async function start() {
     console.log("Connected to MongoDB");
 
     app.listen(port, () => {
-        console.log(`API listening on http://localhost:${port}`);
+        console.log(`API listening on port ${port}`);
+        startKeepAlive();
     })
 }
 

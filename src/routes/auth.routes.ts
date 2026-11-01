@@ -7,17 +7,18 @@ import { validate } from '../middleware/validate.js';
 const router = Router();
 
 const authLimiter = rateLimit({
-    windowMs: 15 * 60 * 1000,
-    limit: 20,
-    standardHeaders: 'draft-7',
-    legacyHeaders: false,
-    message: {
-        error: {
-          code: 'RATE_LIMITED',
-          message: 'Too many attempts. Please try again later.',
-          details: [],
-        },
+  skip: () => process.env.NODE_ENV === 'test',
+  windowMs: 15 * 60 * 1000,
+  limit: 20,
+  standardHeaders: 'draft-7',
+  legacyHeaders: false,
+  message: {
+      error: {
+        code: 'RATE_LIMITED',
+        message: 'Too many attempts. Please try again later.',
+        details: [],
       },
+    },
 })
 
 router.post('/register', authLimiter, validate(registerSchema), register);

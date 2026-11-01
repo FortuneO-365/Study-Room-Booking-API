@@ -85,7 +85,7 @@ export async function getRoomAvailabililty(roomId: string, date: string, include
     }).select("startTime endTime").lean();
 
     const now = Date.now();
-    const slots = [];
+    const slots: { start: string; end: string; available: boolean }[] = [];
 
     
     for (let start = dayStart.getTime(); start + SLOT_MS <= dayEnd.getTime(); start += SLOT_MS){
@@ -99,7 +99,7 @@ export async function getRoomAvailabililty(roomId: string, date: string, include
         slots.push({
             start: new Date(start).toISOString(),
             end: new Date(end).toISOString(),
-            availability: !isBooked && !hasStarted,
+            available: !isBooked && !hasStarted,
         });
     }
 
@@ -131,7 +131,7 @@ export async function editRoomDetails(roomId: string, input: UpdateRoomInput){
     const update: Record<string, unknown> = {};
     const { name, amenities, capacity, isActive } = input;
 
-    if (name !== undefined) update.name = name;
+    if (name !== undefined) update.roomName = name;
     if (amenities !== undefined) update.amenities = amenities;
     if (capacity !== undefined) update.capacity = capacity
     if (isActive !== undefined) update.isActive = isActive
@@ -172,7 +172,7 @@ export async function removeRoom(roomId: string){
 
     if(futureBookings > 0){
         throw ApiError.conflict(
-            'ROOM_HAS_BOOKING', 
+            'ROOM_HAS_BOOKINGS', 
             'This room has upcoming bookings. Deactivate it instead of deleting it'
         );
     }

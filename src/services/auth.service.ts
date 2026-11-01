@@ -57,7 +57,7 @@ export async function registerUser(input: RegisterInput) {
 export async function loginUser(input: LoginInput) {
     const { email, password } = input;
 
-    const user =  await User.findOne({email}, 'passwordHash name email role');
+    const user =  await User.findOne({email}, 'passwordHash name email role createdAt');
     if(!user){
         throw ApiError.unAuthorized('UNAUTHORIZED', 'Invalid email or password.');
     }

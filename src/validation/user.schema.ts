@@ -1,10 +1,11 @@
 import { email, z } from 'zod';
 
 const emailSchema = z
-    .email()
-    .trim()
-    .toLowerCase()
-    .max(254);
+  .string({ error: 'Email is required' })
+  .trim()
+  .toLowerCase()
+  .email('Enter a valid email address.')
+  .max(254);
 
 const passwordSchema = z
     .string({ error: 'Password is required'})
